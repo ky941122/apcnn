@@ -24,8 +24,8 @@ tf.flags.DEFINE_integer("embedding_dim", 300, "embedding dim [100/300]")
 # tf.flags.DEFINE_integer("model_type", 1, "model type, 1 for AP-CNN, 2 for AP-biLSTM [1]")
 # tf.flags.DEFINE_string("model_dir", "model", "model path")
 # common
-tf.flags.DEFINE_float("margin", 1.5, "loss function margin, 0.5 for AP-CNN, 0.2 for AP-BiLSTM")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.8, "dropout keep prob [0.8]")
+tf.flags.DEFINE_float("margin", 1.7, "loss function margin, 0.5 for AP-CNN, 0.2 for AP-BiLSTM")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "dropout keep prob [0.8]")
 # cnn
 tf.flags.DEFINE_integer("num_filters", 400, "num of conv filters [400]")
 tf.flags.DEFINE_string("filter_sizes_1", '1,2,3,4', "filter sizes")
