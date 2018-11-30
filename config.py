@@ -24,10 +24,10 @@ tf.flags.DEFINE_integer("embedding_dim", 300, "embedding dim [100/300]")
 # tf.flags.DEFINE_integer("model_type", 1, "model type, 1 for AP-CNN, 2 for AP-biLSTM [1]")
 # tf.flags.DEFINE_string("model_dir", "model", "model path")
 # common
-tf.flags.DEFINE_float("margin", 1.7, "loss function margin, 0.5 for AP-CNN, 0.2 for AP-BiLSTM")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.7, "dropout keep prob [0.8]")
+tf.flags.DEFINE_float("margin", 2.5, "loss function margin, 0.5 for AP-CNN, 0.2 for AP-BiLSTM")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "dropout keep prob [0.8]")
 # cnn
-tf.flags.DEFINE_integer("num_filters", 400, "num of conv filters [400]")
+tf.flags.DEFINE_integer("num_filters", 200, "num of conv filters [400]")
 tf.flags.DEFINE_string("filter_sizes_1", '1,2,3,4', "filter sizes")
 tf.flags.DEFINE_string("filter_sizes_2", '3,5,7', "filter sizes")
 # lstm
@@ -49,7 +49,7 @@ tf.flags.DEFINE_integer("grad_clip_norm", 5, "max grad norm if use grad clip [5]
 # tf.flags.DEFINE_integer("num_keep_ckpts", 5, "max num ckpts [5]")
 # tf.flags.DEFINE_integer("random_seed", 123, "random seed [123]")
 tf.flags.DEFINE_integer("num_checkpoints", 2000, "Number of checkpoints to store (default: 2)")
-tf.flags.DEFINE_integer("checkpoint_every", 10000, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_integer("checkpoint_every", 5000, "Save model after this many steps (default: 100)")
 
 # auto params, do not need to set
 tf.flags.DEFINE_integer("vocab_size", 22511, "vocabulary size")
