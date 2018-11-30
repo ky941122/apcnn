@@ -47,7 +47,7 @@ class APCNN:
 
                 with tf.name_scope("loss"):
                     self.loss = tf.reduce_mean(
-                        tf.maximum(0.0, self.params.margin - self.score + self.negative_score))
+                        tf.maximum(0.0, self.params.margin - self.score + self.negative_score))     #只有当pos-neg的分数大于margin时，loss才为0.所以margin越大训练难度越大。
 
                     if params.optimizer == "rmsprop":
                         opt = tf.train.RMSPropOptimizer(params.lr)
