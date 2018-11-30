@@ -1,4 +1,5 @@
 #coding=utf-8
+from __future__ import division
 
 import sys
 reload(sys)
@@ -71,13 +72,33 @@ def de_id(ids, id2tok):
     return line
 
 
-def inference(word_list, user_dict, train, ckpt_path, k=30, mode=tf.estimator.ModeKeys.PREDICT):
-    k = int(k)
-    tokenizer = jieba.Tokenizer()
-    tokenizer.load_userdict(user_dict)
-    vocab, id2tok = build_vocab(word_list)   #vocab里token是unicode， id2tok里tok是str， 两个里面id都是int
-    print "read data"
-    alist = read_ans(train, FLAGS.max_sequence_length)  #是个二维list
+def read_dev(file_name, seq_len):
+    dev_data = dict()
+    f = open(file_name, 'r')
+    for line in f.readlines():
+        line = line.strip()
+        userq, stdq = line.split("\t")
+
+        userq = userq.strip()
+
+        stdq = stdq.strip().split()
+        stdq = stdq[:seq_len]
+        stdq = stdq + [1] * (seq_len - len(stdq))
+
+        if userq not in dev_data:   # dict的key不能是list，因此userq保留string的形式
+            dev_data[userq] = [stdq]
+        else:
+            dev_data[userq].append(stdq)
+
+    return dev_data
+
+
+
+def dev(ckpt_path, k=30, mode=tf.estimator.ModeKeys.PREDICT):
+    print "read data..."
+    ans = read_ans("data/id_data_sort", 16)
+    dev_data = read_dev("data/id_dev_2w", 16)
+    print "read data done"
 
     with tf.Graph().as_default():
         with tf.device("/gpu:0"):
@@ -93,30 +114,22 @@ def inference(word_list, user_dict, train, ckpt_path, k=30, mode=tf.estimator.Mo
                 sess.run(tf.global_variables_initializer())
                 saver.restore(sess=sess, save_path=ckpt_path)
 
-                while True:
-                    print "Please input query:"
-                    line = sys.stdin.readline().strip()
-                    if not line:
-                        line = "小米蓝牙手柄能连接手机玩吗"
-                    ws = tokenizer.cut(line)  #切出来每个tok是unicode。
-                    ws = list(ws)
-                    q = "_".join(ws)
 
-                    ws_enc = [tok.encode("utf-8") for tok in ws]
-                    q_enc = "_".join(ws_enc)
+                cnt = 0
+                dev_count = 0
+                for userq in dev_data:
+                    print "\tEvaluation step:", dev_count
+                    dev_count += 1
 
-                    print "tokenized query is:", q_enc
-
-                    q = tok2id(q, FLAGS.max_sequence_length, vocab)  #是个list
-                    print "id q is:", q
-
+                    q = userq.strip().split()
+                    q = q[:FLAGS.max_sequence_length]
+                    q = q + [1] * (FLAGS.max_sequence_length - len(q))
                     qs = []
-                    for a in alist: #每个a是个list
+                    for a in ans:
                         qs.append(q)
-
                     feed_dict = {
                         model.usrq: qs,
-                        model.pos: alist,
+                        model.pos: ans,
                         model.dropout_keep_prob: 1.0,
                         model.is_training: False
                     }
@@ -126,27 +139,22 @@ def inference(word_list, user_dict, train, ckpt_path, k=30, mode=tf.estimator.Mo
 
                     index = sess.run(topk, feed_dict)[1]
 
-                    recalls = np.array(alist)[index]
-
-                    print "Recall results are: \n"
+                    recalls = np.array(ans)[index]  # 召回的相似Q
                     for recall in recalls:
-                        line = de_id(recall, id2tok)
-                        print line, "\n"
+                        recall = list(recall)
+                        if recall in dev_data[userq]:
+                            cnt += 1
+                            break  # 有一个相似命中了就退出
+
+                return cnt / len(dev_data)
+
 
 
 if __name__ == "__main__":
-    word_list = "data/word_list"
-    user_dict = "data/userterms.dic"
-    train = 'data/id_data_sort'
     args = sys.argv
-    ckpt_path = args[1]
-    if len(args) > 2:
-        k = args[2]
-        if len(args) > 3:
-            mode = args[3]
-            inference(word_list, user_dict, train, ckpt_path, k, mode)
-        else:
-            inference(word_list, user_dict, train, ckpt_path, k)
-    else:
-        inference(word_list, user_dict, train, ckpt_path)
+    ckpt = args[1]
+    result = dev(ckpt)
+    print "Evaluation:", result
+
+
 
