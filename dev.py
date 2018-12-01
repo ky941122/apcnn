@@ -10,6 +10,7 @@ import tensorflow as tf
 import numpy as np
 from cnn import APCNN
 from config import FLAGS
+import data_loader
 
 
 def build_vocab(word_list):
@@ -124,20 +125,27 @@ def dev(ckpt_path, k=30, mode=tf.estimator.ModeKeys.PREDICT):
                     q = userq.strip().split()
                     q = q[:FLAGS.max_sequence_length]
                     q = q + [1] * (FLAGS.max_sequence_length - len(q))
-                    qs = []
+                    devs = []
+                    scores = []
                     for a in ans:
-                        qs.append(q)
-                    feed_dict = {
-                        model.usrq: qs,
-                        model.pos: ans,
-                        model.dropout_keep_prob: 1.0,
-                        model.is_training: False
-                    }
+                        devs.append((q, a))
+                    batches = data_loader.batch_iter(devs, FLAGS.batch_size, 1, False)
+                    for batch in batches:
+                        feed_dict = {
+                            model.usrq: batch[:, 0],
+                            model.pos: batch[:, 1],
+                            model.dropout_keep_prob: 1.0,
+                            model.is_training: False
+                        }
 
-                    score = tf.reshape(model.score, [-1])
-                    topk = tf.nn.top_k(score, k)
+                        score = sess.run(model.score, feed_dict)
+                        score = tf.reshape(score, [-1])
+                        scores.append(score)
 
-                    index = sess.run(topk, feed_dict)[1]
+                    scores = tf.reshape(scores, [-1])
+                    topk = tf.nn.top_k(scores, k)
+
+                    index = sess.run(topk)[1]
 
                     recalls = np.array(ans)[index]  # 召回的相似Q
                     for recall in recalls:
