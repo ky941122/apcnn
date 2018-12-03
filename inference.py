@@ -7,6 +7,8 @@ sys.setdefaultencoding('utf-8')
 import jieba
 import tensorflow as tf
 import numpy as np
+
+import data_loader
 from cnn import APCNN
 from config import FLAGS
 
@@ -110,28 +112,35 @@ def inference(word_list, user_dict, train, ckpt_path, k=30, mode=tf.estimator.Mo
                     q = tok2id(q, FLAGS.max_sequence_length, vocab)  #是个list
                     print "id q is:", q
 
-                    qs = []
-                    for a in alist: #每个a是个list
-                        qs.append(q)
+                    devs = []
+                    scores = []
+                    for a in alist:
+                        devs.append((q, a))
+                    batches = data_loader.batch_iter(devs, FLAGS.batch_size, 1, False)
+                    for batch in batches:
+                        feed_dict = {
+                            model.usrq: batch[:, 0],
+                            model.pos: batch[:, 1],
+                            model.dropout_keep_prob: 1.0,
+                            model.is_training: False
+                        }
 
-                    feed_dict = {
-                        model.usrq: qs,
-                        model.pos: alist,
-                        model.dropout_keep_prob: 1.0,
-                        model.is_training: False
-                    }
+                        score = sess.run(model.score, feed_dict)
+                        score = tf.reshape(score, [-1])
+                        scores.append(score)
 
-                    score = tf.reshape(model.score, [-1])
-                    topk = tf.nn.top_k(score, k)
+                    scores = tf.reshape(scores, [-1])
+                    topk = tf.nn.top_k(scores, k)
 
-                    index = sess.run(topk, feed_dict)[1]
+                    index = sess.run(topk)[1]
 
-                    recalls = np.array(alist)[index]
+                    recalls = np.array(alist)[index]  # 召回的相似Q
 
                     print "Recall results are: \n"
                     for recall in recalls:
                         line = de_id(recall, id2tok)
                         print line, "\n"
+                    
 
 
 if __name__ == "__main__":
